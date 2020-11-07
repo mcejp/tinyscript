@@ -1,0 +1,44 @@
+
+global template
+
+function read_template()
+    template = {}
+    f = open_file('tsmod_template.c')
+    while (line = f.read_line())
+        if line[0] == '#'[0]
+            section = _strdrop(line, 1)
+            template[section] = ''
+        else
+            template[section] = template[section] .. line .. '\n'
+
+#function emit_class_begin(f, class)
+
+output_filename = 'bind.c'
+
+read_template()
+
+class = {
+    fullname: 'std.fstream',
+    fullname_c: 'TSMod_std_fstream',
+    name: 'fstream',
+    native_name: 'std::fstream',
+    methods: (
+        {name: 'Init', static: true},
+    )
+}
+
+classes = ()
+classes .. class
+say(classes)
+
+f = create_file(output_filename)
+f.write('/* TinyScript Bind */')
+f.write()
+
+iterate class in classes
+    #class prologue
+    f.write(_strexpand(template.class_begin, class))
+
+    #class epilogue
+    f.write(_strexpand(template.class_end_1, class))
+    f.write(_strexpand(template.class_end_2, class))

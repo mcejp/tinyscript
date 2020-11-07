@@ -1,0 +1,116 @@
+#############################
+
+load_module('SDL')
+load_module('OpenGL')
+
+global display, display_rect, ui
+
+#############################
+
+function create_button(x, y, w, h)
+    return {
+        type: ui.BUTTON,
+        x: x, y: y, w: w, h: h,
+        children: (),
+        colour: $FF888888,
+        draw: function()
+            draw_rect(me.x, me.y, me.w, me.h, me.colour)
+        update: function()
+    }
+
+function create_panel(x, y, w, h)
+    return {
+        type: ui.PANEL,
+        x: x, y: y, w: w, h: h,
+        children: (),
+        colour: $FF404040,
+        draw: function()
+            draw_rect(me.x, me.y, me.w, me.h, me.colour)
+        update: function()
+    }
+
+#############################
+
+function create_ui()
+    ui = {
+        PANEL: 1,
+        BUTTON: 2,
+
+        LEFT: 0, HCENTER: 1, RIGHT: 2,
+        TOP: 0, VCENTER: 4, BOTTOM: 8,
+
+        mouse_x: 0, mouse_y: 0,
+        widgets: ()
+    }
+
+#############################
+
+function draw_rect(x, y, w, h, colour)
+    gl.Color4bv(colour)
+    gl.Begin(gl.QUADS)
+    gl.Vertex(x,        y)
+    gl.Vertex(x,        y + h)
+    gl.Vertex(x + w,    y + h)
+    gl.Vertex(x + w,    y)
+    gl.End()
+
+#############################
+
+function init_video()
+    display_rect = SDL.Rect(0, 0, 640, 480)
+
+    SDL.Init(SDL.INIT_VIDEO)
+    display = SDL.SetVideoMode(display_rect.w, display_rect.h, 32, SDL.SWSURFACE | SDL.RESIZABLE | SDL.OPENGL)
+    #SDL.MaximizeWindow()
+
+    gl.ClearColor(1, 1, 1, 0)
+
+    return true
+
+#############################
+
+function process_events()
+    event = SDL.PollEvent()
+
+    if event == null
+        return
+
+    if event.type == SDL.MOUSEMOTION
+        ui.mouse_x = event.motion.x
+        ui.mouse_y = event.motion.y
+    else if event.type == SDL.VIDEORESIZE
+        display_rect.w = event.resize.w
+        display_rect.h = event.resize.h
+        say(display_rect)
+
+        gl.Viewport(0, 0, display_rect.w, display_rect.h)
+        gl.LoadIdentity()
+        gl.Ortho(0, display_rect.w, display_rect.h, 0, -1, 1)
+    else if event.type == SDL.QUIT
+        return false
+
+#############################
+
+if !init_video()
+    return
+
+create_ui()
+
+ui.widgets .. create_panel(20, 20, 300, 200)
+
+say(ui.widgets[0].colour)
+
+while true
+    if process_events() == false
+        break
+
+    gl.Clear(gl.COLOR_BUFFER_BIT)
+
+    iterate widget in ui.widgets
+        widget.update(0.020)
+        widget.draw()
+
+    SDL.GL_SwapBuffers()
+    SDL.Delay(20)
+
+SDL.Quit()
